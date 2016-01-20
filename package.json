@@ -1,0 +1,28 @@
+{
+    "name": "somata-registry",
+    "version": "0.0.1",
+    "description": "Registry for Somata service discovery",
+    "homepage": "http://github.com/somata/somata-registry",
+    "repository": {
+        "type": "git",
+        "url": "http://github.com/somata/somata-registry.git"
+    },
+    "author": {
+        "name": "Prontotype",
+        "url": "http://prontotype.us/"
+    },
+    "keywords": [
+        "somata",
+        "registry",
+        "discovery",
+        "consul"
+    ],
+    "main": "lib/registry.js",
+    "bin": {
+        "somata-registry": "lib/registry.js"
+    },
+    "dependencies": {
+        "somata": "0.1.x"
+    }
+}
+
