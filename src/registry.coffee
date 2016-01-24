@@ -3,6 +3,7 @@ somata = require 'somata'
 
 VERBOSE = process.env.SOMATA_VERBOSE || false
 SERVICE_HOST = process.env.SOMATA_SERVICE_HOST
+DEFAULT_HEARTBEAT = 5000
 BUMP_FACTOR = 1.5 # Wiggle room for heartbeats
 
 # Nested map of Name -> ID -> Instance
@@ -20,7 +21,9 @@ registerService = (client_id, service_instance, cb) ->
     log.s "Registering #{service_id}", service_instance
     registered[service_name] ||= {}
     registered[service_name][service_id] = service_instance
-    heartbeats[client_id] = new Date().getTime() + 5000 * 1.5
+    heartbeat_interval = service_instance.heartbeat
+    if !heartbeat_interval? then heartbeat_interval = DEFAULT_HEARTBEAT
+    heartbeats[client_id] = new Date().getTime() + heartbeat_interval * 1.5
     cb null, service_instance
 
 deregisterService = (service_name, service_id, cb) ->
@@ -33,6 +36,7 @@ deregisterService = (service_name, service_id, cb) ->
 # Health checking
 
 isHealthy = (service_instance) ->
+    if service_instance.heartbeat == 0 then return true
     next_heartbeat = heartbeats[service_instance.client_id]
     is_healthy = next_heartbeat > new Date().getTime()
     if !is_healthy
@@ -50,7 +54,7 @@ setInterval checkServices, 2000
 # Finding services
 
 findServices = (cb) ->
-    cb null, instances
+    cb null, registered
 
 getHealthyServiceByName = (service_name) ->
     service_instances = registered[service_name]
@@ -63,6 +67,13 @@ getHealthyServiceByName = (service_name) ->
 getServiceById = (service_id) ->
     service_name = service_id.split('~')[0]
     return registered[service_name]?[service_id]
+
+getServiceByClientId = (client_id) ->
+    for service_name, service_instances of registered
+        for service_id, instance of service_instances
+            if instance.client_id == client_id
+                return instance
+    return null
 
 getService = (service_name, cb) ->
     if service_instance = getHealthyServiceByName(service_name)
@@ -97,11 +108,10 @@ registry_options = {
 
 class Registry extends somata.Service
 
-    register: (cb) ->
-        console.log "Who registers the registry?"
+    register: ->
+        log.d "[Registry.register] Who registers the registry?"
 
     deregister: (cb) ->
-        console.log "Who deregisters the registry?"
         cb()
 
     handleMethod: (client_id, message) ->
@@ -112,8 +122,10 @@ class Registry extends somata.Service
             super
 
     gotPing: (client_id) ->
-        bump_time = 5000 * BUMP_FACTOR
-        heartbeats[client_id] = new Date().getTime() + bump_time
+        if service_instance = getServiceByClientId client_id
+            heartbeat_interval = service_instance.heartbeat
+            if !heartbeat_interval? then heartbeat_interval = DEFAULT_HEARTBEAT
+            heartbeats[client_id] = new Date().getTime() + heartbeat_interval * 1.5
 
 registry = new Registry 'somata:registry', registry_methods, registry_options
 
