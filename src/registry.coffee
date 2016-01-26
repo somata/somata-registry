@@ -29,6 +29,7 @@ registerService = (client_id, service_instance, cb) ->
 deregisterService = (service_name, service_id, cb) ->
     log.w "Deregistering #{service_id}"
     if service_instance = registered[service_name]?[service_id]
+        delete registry.known_pings[service_instance.client_id]
         delete registered[service_name]?[service_id]
         registry.publish 'deregister', service_instance
     cb? null, service_id
