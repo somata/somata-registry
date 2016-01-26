@@ -1,6 +1,6 @@
 {
     "name": "somata-registry",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "description": "Registry for Somata service discovery",
     "homepage": "http://github.com/somata/somata-registry",
     "repository": {
