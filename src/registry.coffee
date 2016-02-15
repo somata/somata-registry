@@ -19,12 +19,12 @@ registerService = (client_id, service_instance, cb) ->
     service_name = service_instance.name
     service_instance.client_id = client_id
     service_id = service_instance.id
-    log.s "Registering #{service_id}", service_instance
     registered[service_name] ||= {}
     registered[service_name][service_id] = service_instance
     heartbeat_interval = service_instance.heartbeat
     if !heartbeat_interval? then heartbeat_interval = DEFAULT_HEARTBEAT
     heartbeats[client_id] = new Date().getTime() + heartbeat_interval * 1.5
+    log.s "Registered #{service_id}"
     cb null, service_instance
 
 deregisterService = (service_name, service_id, cb) ->
@@ -42,7 +42,7 @@ isHealthy = (service_instance) ->
     next_heartbeat = heartbeats[service_instance.client_id]
     is_healthy = next_heartbeat > new Date().getTime()
     if !is_healthy
-        log.w "Heartbeat overdue by #{new Date().getTime() - next_heartbeat}"
+        log.w "Heartbeat overdue by #{new Date().getTime() - next_heartbeat}" if VERBOSE
         deregisterService service_instance.name, service_instance.id
     return is_healthy
 
@@ -81,7 +81,7 @@ getService = (service_name, cb) ->
     if service_instance = getHealthyServiceByName(service_name)
         cb null, service_instance
     else
-        log.i "No healthy instances for #{service_name}"
+        log.w "No healthy instances for #{service_name}"
         cb "No healthy instances for #{service_name}"
 
 # Heartbeat responses
