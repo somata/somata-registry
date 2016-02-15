@@ -86,22 +86,11 @@ getService = (service_name, cb) ->
 
 # Heartbeat responses
 
-heartbeat = (service_id, cb) ->
-    if service_instance = getServiceById(service_id)
-        bump_time = service_instance.heartbeat * BUMP_FACTOR
-        heartbeats[service_id] = new Date().getTime() + bump_time
-        cb null, true
-    else
-        # TODO: Tell service to re-register
-        log.w "No known service #{service_id}"
-        cb "No known service #{service_id}", false
-
 registry_methods = {
     registerService
     deregisterService
     findServices
     getService
-    heartbeat
 }
 
 registry_options = {
