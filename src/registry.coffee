@@ -3,6 +3,7 @@ somata = require 'somata'
 
 VERBOSE = process.env.SOMATA_VERBOSE || false
 SERVICE_HOST = process.env.SOMATA_SERVICE_HOST
+REGISTRY_PORT = process.env.SOMATA_REGISTRY_PORT || 8420
 DEFAULT_HEARTBEAT = 5000
 BUMP_FACTOR = 1.5 # Wiggle room for heartbeats
 
@@ -104,7 +105,7 @@ registry_methods = {
 }
 
 registry_options = {
-    rpc_options: {port: 8420}
+    rpc_options: {port: REGISTRY_PORT}
 }
 
 class Registry extends somata.Service
