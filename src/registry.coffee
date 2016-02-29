@@ -24,7 +24,7 @@ registerService = (client_id, service_instance, cb) ->
     heartbeat_interval = service_instance.heartbeat
     if !heartbeat_interval? then heartbeat_interval = DEFAULT_HEARTBEAT
     heartbeats[client_id] = new Date().getTime() + heartbeat_interval * 1.5
-    log.s "Registered #{service_id}"
+    log.s "Registered #{client_id} as #{service_id}"
     cb null, service_instance
 
 deregisterService = (service_name, service_id, cb) ->
@@ -32,6 +32,7 @@ deregisterService = (service_name, service_id, cb) ->
     if service_instance = registered[service_name]?[service_id]
         delete heartbeats[service_instance.client_id]
         delete registered[service_name][service_id]
+        delete registry.known_pings[service_instance.client_id]
         registry.publish 'deregister', service_instance
     cb? null, service_id
 
