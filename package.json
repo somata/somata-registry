@@ -22,7 +22,8 @@
         "somata-registry": "lib/registry.js"
     },
     "dependencies": {
-        "somata": "0.1.x"
+        "somata": "0.1.x",
+        "minimist": "1.2.x"
     }
 }
 

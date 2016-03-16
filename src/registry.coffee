@@ -1,9 +1,12 @@
 somata = require 'somata'
+minimist = require 'minimist'
 {log} = somata
 
-VERBOSE = process.env.SOMATA_VERBOSE || false
-SERVICE_HOST = process.env.SOMATA_SERVICE_HOST
-REGISTRY_PORT = process.env.SOMATA_REGISTRY_PORT || 8420
+argv = minimist process.argv
+
+VERBOSE = argv.v || argv.verbose || process.env.SOMATA_VERBOSE || false
+SERVICE_HOST = argv.h || argv.host || process.env.SOMATA_SERVICE_HOST
+REGISTRY_PORT = argv.p || argv.port || process.env.SOMATA_REGISTRY_PORT || 8420
 DEFAULT_HEARTBEAT = 5000
 BUMP_FACTOR = 1.5 # Wiggle room for heartbeats
 
