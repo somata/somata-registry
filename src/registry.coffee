@@ -10,8 +10,9 @@ REGISTRY_PORT = argv.p || argv.port || process.env.SOMATA_REGISTRY_PORT || 8420
 DEFAULT_HEARTBEAT = 5000
 BUMP_FACTOR = 1.5 # Wiggle room for heartbeats
 
-# Nested map of Name -> ID -> Instance
+# Nested maps of Name -> ID -> Instance
 registered = {}
+remote_registered = {}
 
 # Map of ID -> Expected heartbeat
 heartbeats = {}
@@ -28,6 +29,7 @@ registerService = (client_id, service_instance, cb) ->
     if !heartbeat_interval? then heartbeat_interval = DEFAULT_HEARTBEAT
     heartbeats[client_id] = new Date().getTime() + heartbeat_interval * 1.5
     log.s "Registered #{client_id} as #{service_id}"
+    registry.publish 'register', service_instance
     cb null, service_instance
 
 deregisterService = (service_name, service_id, cb) ->
@@ -70,6 +72,12 @@ getHealthyServiceByName = (service_name) ->
             return instance
     return null
 
+getRemoteServiceByName = (service_name) ->
+    service_instances = remote_registered[service_name]
+    # TODO: Go through to find healthy ones
+    if service_instances? and Object.keys(service_instances).length
+        return service_instances[Object.keys(service_instances)[0]]
+
 getServiceById = (service_id) ->
     service_name = service_id.split('~')[0]
     return registered[service_name]?[service_id]
@@ -84,9 +92,48 @@ getServiceByClientId = (client_id) ->
 getService = (service_name, cb) ->
     if service_instance = getHealthyServiceByName(service_name)
         cb null, service_instance
+    else if service_instance = getRemoteServiceByName(service_name)
+        cb null, service_instance
     else
         log.w "No healthy instances for #{service_name}"
         cb "No healthy instances for #{service_name}"
+
+# Sharing with other registries
+
+summarizeServices = (services=registered) ->
+    for service_name, service_instances of services
+        console.log '* ' + service_name
+        for service_id, service_instance of service_instances
+            console.log '    * ' + service_id
+
+foundRemoteServices = (err, remote_services) ->
+    for service_name, service_instances of remote_services
+        remote_registered[service_name] ||= {}
+        for service_id, service_instance of service_instances
+            remote_registered[service_name][service_id] = service_instance
+    summarizeServices(remote_registered)
+
+registeredRemoteService = (service) ->
+    remote_registered[service.name] ||= {}
+    remote_registered[service.name][service.id] = service
+    summarizeServices(remote_registered)
+
+deregisteredRemoteService = (service) ->
+    delete remote_registered[service.name][service.id]
+    registry.publish 'deregister', service
+    summarizeServices(remote_registered)
+
+join = (host, port, cb) ->
+    join_client = new somata.Client {registry_host: host, registry_port: port}
+    join_client.remote 'registry', 'findServices', foundRemoteServices
+    join_client.subscribe 'registry', 'register', registeredRemoteService
+    join_client.subscribe 'registry', 'deregister', deregisteredRemoteService
+    cb null, "Joining to #{host}:#{port}..."
+
+if join_string = argv.j || argv.join
+    [host, port] = join_string.split(':')
+    join host, port, (err, joined) ->
+        console.log joined
 
 # Heartbeat responses
 
@@ -95,6 +142,7 @@ registry_methods = {
     deregisterService
     findServices
     getService
+    join
 }
 
 registry_options = {
