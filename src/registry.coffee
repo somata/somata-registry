@@ -100,28 +100,19 @@ getService = (service_name, cb) ->
 
 # Sharing with other registries
 
-summarizeServices = (services=registered) ->
-    for service_name, service_instances of services
-        console.log '* ' + service_name
-        for service_id, service_instance of service_instances
-            console.log '    * ' + service_id
-
 foundRemoteServices = (err, remote_services) ->
     for service_name, service_instances of remote_services
         remote_registered[service_name] ||= {}
         for service_id, service_instance of service_instances
             remote_registered[service_name][service_id] = service_instance
-    summarizeServices(remote_registered)
 
 registeredRemoteService = (service) ->
     remote_registered[service.name] ||= {}
     remote_registered[service.name][service.id] = service
-    summarizeServices(remote_registered)
 
 deregisteredRemoteService = (service) ->
     delete remote_registered[service.name][service.id]
     registry.publish 'deregister', service
-    summarizeServices(remote_registered)
 
 join = (host, port, cb) ->
     join_client = new somata.Client {registry_host: host, registry_port: port}
