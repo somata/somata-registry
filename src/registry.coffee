@@ -100,30 +100,30 @@ getService = (service_name, cb) ->
 
 # Sharing with other registries
 
-foundRemoteServices = (err, remote_services) ->
+foundRemoteServices = (remote_registry) -> (err, remote_services) ->
     for service_name, service_instances of remote_services
         remote_registered[service_name] ||= {}
         for service_id, service_instance of service_instances
             remote_registered[service_name][service_id] = service_instance
 
-registeredRemoteService = (service) ->
+registeredRemoteService = (remote_registry) -> (service) ->
     remote_registered[service.name] ||= {}
     remote_registered[service.name][service.id] = service
 
-deregisteredRemoteService = (service) ->
+deregisteredRemoteService = (remote_registry) -> (service) ->
     delete remote_registered[service.name][service.id]
     registry.publish 'deregister', service
 
-join = (host, port, cb) ->
-    join_client = new somata.Client {registry_host: host, registry_port: port}
-    join_client.remote 'registry', 'findServices', foundRemoteServices
-    join_client.subscribe 'registry', 'register', registeredRemoteService
-    join_client.subscribe 'registry', 'deregister', deregisteredRemoteService
-    cb null, "Joining to #{host}:#{port}..."
+join = (remote_registry, cb) ->
+    join_client = new somata.Client {registry_host: remote_registry.host, registry_port: remote_registry.port}
+    join_client.remote 'registry', 'findServices', foundRemoteServices(remote_registry)
+    join_client.subscribe 'registry', 'register', registeredRemoteService(remote_registry)
+    join_client.subscribe 'registry', 'deregister', deregisteredRemoteService(remote_registry)
+    cb null, "Joining to #{remote_registry.host}:#{remote_registry.port}..."
 
 if join_string = argv.j || argv.join
     [host, port] = join_string.split(':')
-    join host, port, (err, joined) ->
+    join {host, port}, (err, joined) ->
         console.log joined
 
 # Heartbeat responses
