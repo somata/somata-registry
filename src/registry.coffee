@@ -102,11 +102,12 @@ getService = (service_name, cb) ->
 
 foundRemoteServices = (remote_registry) -> (err, remote_services) ->
     for service_name, service_instances of remote_services
-        remote_registered[service_name] ||= {}
         for service_id, service_instance of service_instances
-            remote_registered[service_name][service_id] = service_instance
+            registeredRemoteService(remote_registry)(service_instance)
 
 registeredRemoteService = (remote_registry) -> (service) ->
+    if service.host == '0.0.0.0'
+        service.host = remote_registry.host
     remote_registered[service.name] ||= {}
     remote_registered[service.name][service.id] = service
 
