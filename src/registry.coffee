@@ -108,6 +108,7 @@ foundRemoteServices = (remote_registry) -> (err, remote_services) ->
 registeredRemoteService = (remote_registry) -> (service) ->
     if service.host == '0.0.0.0'
         service.host = remote_registry.host
+    service.registry = remote_registry
     remote_registered[service.name] ||= {}
     remote_registered[service.name][service.id] = service
 
@@ -117,9 +118,10 @@ deregisteredRemoteService = (remote_registry) -> (service) ->
 
 join = (remote_registry, cb) ->
     join_client = new somata.Client {registry_host: remote_registry.host, registry_port: remote_registry.port}
-    join_client.remote 'registry', 'findServices', foundRemoteServices(remote_registry)
     join_client.subscribe 'registry', 'register', registeredRemoteService(remote_registry)
     join_client.subscribe 'registry', 'deregister', deregisteredRemoteService(remote_registry)
+    join_client.registry_connection.on 'connect', ->
+        join_client.remote 'registry', 'findServices', foundRemoteServices(remote_registry)
     cb null, "Joining to #{remote_registry.host}:#{remote_registry.port}..."
 
 if join_string = argv.j || argv.join
