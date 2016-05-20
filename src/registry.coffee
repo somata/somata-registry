@@ -5,7 +5,7 @@ minimist = require 'minimist'
 argv = minimist process.argv
 
 VERBOSE = argv.v || argv.verbose || process.env.SOMATA_VERBOSE || false
-SERVICE_HOST = argv.h || argv.host || process.env.SOMATA_SERVICE_HOST
+REGISTRY_HOST = argv.h || argv.host || process.env.SOMATA_REGISTRY_HOST || '127.0.0.1'
 REGISTRY_PORT = argv.p || argv.port || process.env.SOMATA_REGISTRY_PORT || 8420
 DEFAULT_HEARTBEAT = 5000
 BUMP_FACTOR = 1.5 # Wiggle room for heartbeats
@@ -139,9 +139,10 @@ registry_methods = {
     join
 }
 
-registry_options = {
-    rpc_options: {port: REGISTRY_PORT}
-}
+registry_options =
+    rpc_options:
+        host: REGISTRY_HOST
+        port: REGISTRY_PORT
 
 class Registry extends somata.Service
 
