@@ -5,6 +5,7 @@ minimist = require 'minimist'
 argv = minimist process.argv
 
 VERBOSE = argv.v || argv.verbose || process.env.SOMATA_VERBOSE || false
+REGISTRY_PROTO = argv.h || argv.proto || process.env.SOMATA_REGISTRY_PROTO || 'tcp'
 REGISTRY_HOST = argv.h || argv.host || process.env.SOMATA_REGISTRY_HOST || '127.0.0.1'
 REGISTRY_PORT = argv.p || argv.port || process.env.SOMATA_REGISTRY_PORT || 8420
 DEFAULT_HEARTBEAT = 5000
@@ -139,13 +140,14 @@ registry_methods = {
 
 registry_options =
     rpc_options:
+        proto: REGISTRY_PROTO
         host: REGISTRY_HOST
         port: REGISTRY_PORT
 
 class Registry extends somata.Service
 
     register: ->
-        log.d "[Registry.register] Who registers the registry?"
+        log.d "[Registry.register] Who registers the registry?" if VERBOSE
 
     deregister: (cb) ->
         cb()
