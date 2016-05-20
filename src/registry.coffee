@@ -20,15 +20,13 @@ heartbeats = {}
 # Registration
 
 registerService = (client_id, service_instance, cb) ->
-    service_name = service_instance.name
     service_instance.client_id = client_id
-    service_id = service_instance.id
-    registered[service_name] ||= {}
-    registered[service_name][service_id] = service_instance
-    heartbeat_interval = service_instance.heartbeat
-    if !heartbeat_interval? then heartbeat_interval = DEFAULT_HEARTBEAT
-    heartbeats[client_id] = new Date().getTime() + heartbeat_interval * 1.5
-    log.s "Registered #{client_id} as #{service_id}"
+    if !service_instance.heartbeat?
+        service_instance.heartbeat = DEFAULT_HEARTBEAT
+    registered[service_instance.name] ||= {}
+    registered[service_instance.name][service_instance.id] = service_instance
+    heartbeats[client_id] = new Date().getTime() + service_instance.heartbeat * 1.5
+    log.s "Registered #{client_id} as #{service_instance.id}"
     registry.publish 'register', service_instance
     cb null, service_instance
 
@@ -162,7 +160,6 @@ class Registry extends somata.Service
     gotPing: (client_id) ->
         if service_instance = getServiceByClientId client_id
             heartbeat_interval = service_instance.heartbeat
-            if !heartbeat_interval? then heartbeat_interval = DEFAULT_HEARTBEAT
             heartbeats[client_id] = new Date().getTime() + heartbeat_interval * 1.5
 
 registry = new Registry 'somata:registry', registry_methods, registry_options
