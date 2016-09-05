@@ -5,7 +5,7 @@ minimist = require 'minimist'
 argv = minimist process.argv
 
 VERBOSE = argv.v || argv.verbose || process.env.SOMATA_VERBOSE || false
-REGISTRY_BIND_PROTO = argv.h || argv.proto || process.env.SOMATA_REGISTRY_BIND_PROTO || 'tcp'
+REGISTRY_BIND_PROTO = argv.proto || process.env.SOMATA_REGISTRY_BIND_PROTO || 'tcp'
 REGISTRY_BIND_HOST = argv.h || argv.host || process.env.SOMATA_REGISTRY_BIND_HOST || '127.0.0.1'
 REGISTRY_BIND_PORT = parseInt (argv.p || argv.port || process.env.SOMATA_REGISTRY_BIND_PORT || 8420)
 DEFAULT_HEARTBEAT = 5000
