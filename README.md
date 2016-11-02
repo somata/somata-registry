@@ -17,7 +17,7 @@ $ sudo ln -s /usr/bin/nodejs /usr/bin/node # To fix node-gyp on Ubuntu
 Install globally:
 
 ```sh
-$ npm install -g somata-registry
+$ sudo npm install -g somata-registry
 ```
 
 # Running
