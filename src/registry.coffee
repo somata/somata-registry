@@ -29,7 +29,7 @@ registerService = (client_id, service_instance, cb) ->
     registered[service_instance.name] ||= {}
     registered[service_instance.name][service_instance.id] = service_instance
     heartbeats[client_id] = new Date().getTime() + service_instance.heartbeat * 1.5
-    log.s "[Registry.registerSErvice] <#{client_id}> as #{service_instance.id}"
+    log.s "[Registry.registerService] <#{client_id}> as #{service_instance.id}"
     registry.publish 'register', service_instance
     registry.emit 'register', service_instance
     cb null, service_instance
@@ -215,7 +215,8 @@ class Registry extends somata.Service
 
         # Incoming forwarded methods for remote end of tunnel
         else if message.method == 'forwardMethod'
-            tunnel_local_client.remote message.service, message.method, message.args..., (err, response) ->
+            original_message = message.args[0]
+            tunnel_local_client.remote original_message.service, original_message.method, original_message.args..., (err, response) =>
                 @sendResponse client_id, message.id, response
 
         # Registering a service
