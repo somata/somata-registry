@@ -209,7 +209,7 @@ class Registry extends somata.Service
     handleMethod: (client_id, message) ->
 
         # Intercepted from local clients and forwarded to remote tunnel
-        if message.service != 'registry'
+        if message.service? and message.service != 'registry'
             tunnel_remote_client.registry_connection.sendMethod null, 'forwardMethod', [message], (err, response) =>
                 @sendResponse client_id, message.id, response
 
