@@ -231,7 +231,7 @@ class Registry extends somata.Service
     handleSubscribe: (client_id, message) ->
 
         # Intercepted from local clients and forwarded to remote tunnel
-        if message.service != 'registry'
+        if message.service? and message.service != 'registry'
             tunnel_remote_client._subscribe message.id, 'registry', 'forwardSubscribe', message, (response) =>
                 @sendEvent client_id, message.id, response
 
@@ -251,7 +251,7 @@ class Registry extends somata.Service
             super
 
     handleUnsubscribe: (client_id, message) ->
-        if message.service != 'registry'
+        if message.service? and message.service != 'registry'
             tunnel_remote_client.unsubscribe message.id
         else if @tunneled_subscriptions[message.id]
             delete @tunneled_subscriptions[message.id]
