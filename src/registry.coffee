@@ -44,7 +44,7 @@ deregisterService = (service_name, service_id, cb) ->
     if service_instance = registered[service_name]?[service_id]
         delete heartbeats[service_instance.client_id]
         delete registered[service_name][service_id]
-        delete registry.rpc_binding.known_pings[service_instance.client_id]
+        delete registry.binding.known_pings[service_instance.client_id]
         registry.publish 'deregister', service_instance
         registry.emit 'deregister', service_instance
     cb? null, service_id
@@ -128,7 +128,7 @@ class Registry extends somata.Service
     register: ->
         log.i "[Registry] Bound to #{REGISTRY_BIND_HOST}:#{REGISTRY_BIND_PORT}"
         log.d "[Registry.register] Who registers the registry?" if VERBOSE
-        @rpc_binding.on 'ping', (client_id, message) =>
+        @binding.on 'ping', (client_id, message) =>
             @gotPing client_id
 
     deregister: (cb) ->
