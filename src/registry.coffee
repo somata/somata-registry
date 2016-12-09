@@ -118,7 +118,7 @@ registry_methods = {
 }
 
 registry_options =
-    rpc_options:
+    binding_options:
         proto: REGISTRY_BIND_PROTO
         host: REGISTRY_BIND_HOST
         port: REGISTRY_BIND_PORT
