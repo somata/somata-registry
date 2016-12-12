@@ -1,2 +1,0 @@
-{BridgeLocal, BridgeRemote} = require './bridge'
-
