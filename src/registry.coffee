@@ -10,6 +10,7 @@ DEFAULT_REGISTRY_PORT = 8420
 DEFAULT_BRIDGE_PORT = 8427
 DEFAULT_HEARTBEAT = 5000
 BUMP_FACTOR = 1.5 # Wiggle room for heartbeats
+BUMP_FACTOR = 1.0 # Wiggle room for heartbeats
 
 VERBOSE = argv.v || argv.verbose || process.env.SOMATA_VERBOSE || false
 REGISTRY_BIND_PROTO = argv.proto || process.env.SOMATA_REGISTRY_BIND_PROTO || 'tcp'
@@ -32,6 +33,8 @@ registerService = (client_id, service_instance, cb) ->
     if !service_instance.heartbeat?
         service_instance.heartbeat = DEFAULT_HEARTBEAT
     registered[service_instance.name] ||= {}
+    if existing = registered[service_instance.name][service_instance.id]
+        log.w '[registerService] Service exists', existing
     registered[service_instance.name][service_instance.id] = service_instance
     heartbeats[client_id] = new Date().getTime() + service_instance.heartbeat * BUMP_FACTOR
     log.s "[Registry.registerService] <#{client_id}> as #{service_instance.id}"
@@ -65,7 +68,7 @@ checkServices = ->
         for service_id, service_instance of service_instances
             isHealthy service_instance
 
-setInterval checkServices, 2000
+setInterval checkServices, 500
 
 # Finding services
 
