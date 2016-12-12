@@ -1,15 +1,23 @@
 somata = require 'somata'
+async = require 'async'
 minimist = require 'minimist'
 {log} = somata
+{EventEmitter} = require 'events'
 
 argv = minimist process.argv
 
-VERBOSE = argv.v || argv.verbose || process.env.SOMATA_VERBOSE || false
-REGISTRY_BIND_PROTO = argv.proto || process.env.SOMATA_REGISTRY_BIND_PROTO || 'tcp'
-REGISTRY_BIND_HOST = argv.h || argv.host || process.env.SOMATA_REGISTRY_BIND_HOST || '127.0.0.1'
-REGISTRY_BIND_PORT = parseInt (argv.p || argv.port || process.env.SOMATA_REGISTRY_BIND_PORT || 8420)
+DEFAULT_REGISTRY_PORT = 8420
+DEFAULT_BRIDGE_PORT = 8427
 DEFAULT_HEARTBEAT = 5000
 BUMP_FACTOR = 1.5 # Wiggle room for heartbeats
+BUMP_FACTOR = 1.0 # Wiggle room for heartbeats
+
+VERBOSE = argv.v || argv.verbose || process.env.SOMATA_VERBOSE || false
+REGISTRY_BIND_PROTO = argv.proto || process.env.SOMATA_REGISTRY_BIND_PROTO || 'tcp'
+REGISTRY_BIND_HOST = argv.host || process.env.SOMATA_REGISTRY_BIND_HOST || '127.0.0.1'
+REGISTRY_BIND_PORT = parseInt (argv.port || process.env.SOMATA_REGISTRY_BIND_PORT || DEFAULT_REGISTRY_PORT)
+# BRIDGE_BIND_HOST = parseInt (argv['bridge-bind-host'] || process.env.SOMATA_BRIDGE_BIND_PORT || DEFAULT_BRIDGE_PORT)
+# BRIDGE_BIND_PORT = parseInt (argv['bridge-bind-port'] || process.env.SOMATA_BRIDGE_BIND_PORT || DEFAULT_BRIDGE_PORT)
 
 # Nested maps of Name -> ID -> Instance
 registered = {}
@@ -25,19 +33,23 @@ registerService = (client_id, service_instance, cb) ->
     if !service_instance.heartbeat?
         service_instance.heartbeat = DEFAULT_HEARTBEAT
     registered[service_instance.name] ||= {}
+    if existing = registered[service_instance.name][service_instance.id]
+        log.w '[registerService] Service exists', existing
     registered[service_instance.name][service_instance.id] = service_instance
-    heartbeats[client_id] = new Date().getTime() + service_instance.heartbeat * 1.5
-    log.s "Registered #{client_id} as #{service_instance.id}"
+    heartbeats[client_id] = new Date().getTime() + service_instance.heartbeat * BUMP_FACTOR
+    log.s "[Registry.registerService] <#{client_id}> as #{service_instance.id}"
     registry.publish 'register', service_instance
+    registry.emit 'register', service_instance
     cb null, service_instance
 
 deregisterService = (service_name, service_id, cb) ->
-    log.w "Deregistering #{service_id}"
+    log.w "[Registry.deregisterService] #{service_id}"
     if service_instance = registered[service_name]?[service_id]
         delete heartbeats[service_instance.client_id]
         delete registered[service_name][service_id]
-        delete registry.known_pings[service_instance.client_id]
+        delete registry.binding.known_pings[service_instance.client_id]
         registry.publish 'deregister', service_instance
+        registry.emit 'deregister', service_instance
     cb? null, service_id
 
 # Health checking
@@ -56,7 +68,7 @@ checkServices = ->
         for service_id, service_instance of service_instances
             isHealthy service_instance
 
-setInterval checkServices, 2000
+setInterval checkServices, 500
 
 # Finding services
 
@@ -99,35 +111,6 @@ getService = (service_name, cb) ->
 
 # Sharing with other registries
 
-foundRemoteServices = (remote_registry) -> (err, remote_services) ->
-    for service_name, service_instances of remote_services
-        for service_id, service_instance of service_instances
-            registeredRemoteService(remote_registry)(service_instance)
-
-registeredRemoteService = (remote_registry) -> (service) ->
-    if service.host == '0.0.0.0'
-        service.host = remote_registry.host
-    service.registry = remote_registry
-    remote_registered[service.name] ||= {}
-    remote_registered[service.name][service.id] = service
-
-deregisteredRemoteService = (remote_registry) -> (service) ->
-    delete remote_registered[service.name][service.id]
-    registry.publish 'deregister', service
-
-join = (remote_registry, cb) ->
-    join_client = new somata.Client {registry_host: remote_registry.host, registry_port: remote_registry.port || 8420}
-    join_client.registry_connection.on 'connect', ->
-        join_client.remote 'registry', 'findServices', foundRemoteServices(remote_registry)
-    join_client.subscribe 'registry', 'register', registeredRemoteService(remote_registry)
-    join_client.subscribe 'registry', 'deregister', deregisteredRemoteService(remote_registry)
-    cb null, "Joining to #{remote_registry.host}:#{remote_registry.port}..."
-
-if join_string = argv.j || argv.join
-    [host, port] = join_string.split(':')
-    join {host, port}, (err, joined) ->
-        console.log joined
-
 # Heartbeat responses
 
 registry_methods = {
@@ -135,11 +118,10 @@ registry_methods = {
     deregisterService
     findServices
     getService
-    join
 }
 
 registry_options =
-    rpc_options:
+    binding_options:
         proto: REGISTRY_BIND_PROTO
         host: REGISTRY_BIND_HOST
         port: REGISTRY_BIND_PORT
@@ -149,21 +131,42 @@ class Registry extends somata.Service
     register: ->
         log.i "[Registry] Bound to #{REGISTRY_BIND_HOST}:#{REGISTRY_BIND_PORT}"
         log.d "[Registry.register] Who registers the registry?" if VERBOSE
+        @binding.on 'ping', (client_id, message) =>
+            @gotPing client_id
 
     deregister: (cb) ->
         cb()
 
     handleMethod: (client_id, message) ->
+
+        # Registering a service
         if message.method == 'registerService'
             registerService client_id, message.args..., (err, response) =>
                 @sendResponse client_id, message.id, response
+
+        else if message.method == 'registerServices'
+            service_instances = message.args[0]
+            async.map service_instances, registerService.bind(null, client_id), (err, response) =>
+                @sendResponse client_id, message.id, response
+
         else
             super
 
     gotPing: (client_id) ->
         if service_instance = getServiceByClientId client_id
             heartbeat_interval = service_instance.heartbeat
-            heartbeats[client_id] = new Date().getTime() + heartbeat_interval * 1.5
+            heartbeats[client_id] = new Date().getTime() + heartbeat_interval * BUMP_FACTOR
 
 registry = new Registry 'somata:registry', registry_methods, registry_options
+
+if (bridge_string = argv.t || argv.bridge) and false
+    [host, port] = bridge_string.split(':')
+
+    registry.bridge_remote_client = new BridgeRemote {
+        registry
+        registry_host: host
+        registry_port: port || DEFAULT_REGISTRY_PORT
+    }
+
+    log.i '[Registry.bridge] ' + bridged
 

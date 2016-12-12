@@ -1,6 +1,6 @@
 {
     "name": "somata-registry",
-    "version": "0.0.12",
+    "version": "0.1.0",
     "description": "Registry for Somata service discovery",
     "homepage": "http://github.com/somata/somata-registry",
     "repository": {
@@ -15,14 +15,14 @@
         "somata",
         "registry",
         "discovery",
-        "consul"
+        "microservice"
     ],
     "main": "lib/registry.js",
     "bin": {
         "somata-registry": "lib/registry.js"
     },
     "dependencies": {
-        "somata": "0.1.x",
+        "somata": "0.2.x",
         "minimist": "1.2.x"
     }
 }
