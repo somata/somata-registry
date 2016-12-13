@@ -10,7 +10,6 @@ DEFAULT_REGISTRY_PORT = 8420
 DEFAULT_BRIDGE_PORT = 8427
 DEFAULT_HEARTBEAT = 5000
 BUMP_FACTOR = 1.5 # Wiggle room for heartbeats
-BUMP_FACTOR = 1.0 # Wiggle room for heartbeats
 
 VERBOSE = argv.v || argv.verbose || process.env.SOMATA_VERBOSE || false
 REGISTRY_BIND_PROTO = argv.proto || process.env.SOMATA_REGISTRY_BIND_PROTO || 'tcp'
