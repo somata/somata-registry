@@ -24,6 +24,8 @@ remote_registered = {}
 
 # Map of ID -> Expected heartbeat
 heartbeats = {}
+# Client ID -> Ping ID for deleting known ping
+known_ping_clients = {}
 
 # Registration
 
@@ -46,7 +48,9 @@ deregisterService = (service_name, service_id, cb) ->
     if service_instance = registered[service_name]?[service_id]
         delete heartbeats[service_instance.client_id]
         delete registered[service_name][service_id]
-        delete registry.binding.known_pings[service_instance.client_id]
+        ping_id = known_ping_clients[service_instance.client_id]
+        delete known_ping_clients[service_instance.client_id]
+        delete registry.binding.known_pings[ping_id]
         registry.publish 'deregister', service_instance
         registry.emit 'deregister', service_instance
     cb? null, service_id
@@ -130,8 +134,7 @@ class Registry extends somata.Service
     register: ->
         log.i "[Registry] Bound to #{REGISTRY_BIND_HOST}:#{REGISTRY_BIND_PORT}"
         log.d "[Registry.register] Who registers the registry?" if VERBOSE
-        @binding.on 'ping', (client_id, message) =>
-            @gotPing client_id
+        @binding.on 'ping', @handlePing.bind(@)
 
     deregister: (cb) ->
         cb()
@@ -151,7 +154,8 @@ class Registry extends somata.Service
         else
             super
 
-    gotPing: (client_id) ->
+    handlePing: (client_id, message) ->
+        known_ping_clients[client_id] = message.id
         if service_instance = getServiceByClientId client_id
             heartbeat_interval = service_instance.heartbeat
             heartbeats[client_id] = new Date().getTime() + heartbeat_interval * BUMP_FACTOR
