@@ -7,7 +7,6 @@ minimist = require 'minimist'
 argv = minimist process.argv
 
 DEFAULT_REGISTRY_PORT = 8420
-DEFAULT_BRIDGE_PORT = 8427
 DEFAULT_HEARTBEAT = 5000
 BUMP_FACTOR = 1.5 # Wiggle room for heartbeats
 
@@ -15,8 +14,6 @@ VERBOSE = argv.v || argv.verbose || process.env.SOMATA_VERBOSE || false
 REGISTRY_BIND_PROTO = argv.proto || process.env.SOMATA_REGISTRY_BIND_PROTO || 'tcp'
 REGISTRY_BIND_HOST = argv.host || process.env.SOMATA_REGISTRY_BIND_HOST || '127.0.0.1'
 REGISTRY_BIND_PORT = parseInt (argv.port || process.env.SOMATA_REGISTRY_BIND_PORT || DEFAULT_REGISTRY_PORT)
-# BRIDGE_BIND_HOST = parseInt (argv['bridge-bind-host'] || process.env.SOMATA_BRIDGE_BIND_PORT || DEFAULT_BRIDGE_PORT)
-# BRIDGE_BIND_PORT = parseInt (argv['bridge-bind-port'] || process.env.SOMATA_BRIDGE_BIND_PORT || DEFAULT_BRIDGE_PORT)
 
 # Nested maps of Name -> ID -> Instance
 registered = {}
@@ -161,15 +158,4 @@ class Registry extends somata.Service
             heartbeats[client_id] = new Date().getTime() + heartbeat_interval * BUMP_FACTOR
 
 registry = new Registry 'somata:registry', registry_methods, registry_options
-
-if (bridge_string = argv.t || argv.bridge) and false
-    [host, port] = bridge_string.split(':')
-
-    registry.bridge_remote_client = new BridgeRemote {
-        registry
-        registry_host: host
-        registry_port: port || DEFAULT_REGISTRY_PORT
-    }
-
-    log.i '[Registry.bridge] ' + bridged
 
