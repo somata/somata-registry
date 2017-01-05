@@ -1,17 +1,31 @@
 # somata-registry
 
-The Registry is a core service for registering and looking up services by name. Every new Service sends a registry entry (describing its name, hostname, port, protocol), which a Client can then look up to create a Connection.
+The Registry is a core Somata service used to register and look up other services by name. Every new Service sends a registry entry (describing itself as `{name, hostname, port, protocol}`). When a Client tries to connect to a Service it looks up available services by name.
+
+## Installation
+
+Somata requires the [Node.js ZeroMQ library](https://github.com/JustinTulloss/zeromq.node), which requires [ZeroMQ](http://zeromq.org/) - install with your system package manager:
+
+```sh
+$ sudo apt-get install libzmq-dev
+```
+
+Then install the registry globally with NPM:
+
+```sh
+$ sudo npm install -g somata-registry
+```
 
 ## Usage
 
-A single registry should be running [running](#running) on each machine using Somata. By default the registry binds to `127.0.0.1:8420`, and by default every Service and Client will connect to the same.
+Each machine running Somata services should also be running a registry. By default the registry binds to `127.0.0.1:8420`.
 
 ```bash
 $ somata-registry
 [Registry] Bound to 127.0.0.1:8420
 ```
 
-Keep it running in the background with your process manager of choice, e.g. [pm2]():
+Keep it running in the background with your process manager of choice, e.g. [pm2](https://github.com/Unitech/pm2):
 
 ```bash
 $ pm2 start somata-registry
@@ -22,38 +36,7 @@ $ pm2 start somata-registry
 Using the `--host`, `--port`, and `--proto` flags you can change where the registry binds:
 
 ```bash
-$ somata-registry --port 48822
+$ somata-registry --host 0.0.0.0 --port 48822
 [Registry] Bound to 0.0.0.0:48822
 ```
 
-### Joining
-
-A registry can "join" to another registry to share registered service information. Clients can then ask their local registry for remotely registered services.
-
-```bash
-$ somata-registry --join 192.168.0.44
-[Registry] Bound to 0.0.0.0:8420
-[Registry] Joined with 192.168.0.44:8420
-```
-
-Joining is more bandwidth-efficient and fault-tolerant than tunneling, as clients make direct connections to the remote services. However this only really works on trusted internal networks where machines are directly accessible via multiple ports (which services are bound to).
-
-### Tunneling
-
-A registry can "tunnel" to another registry to share service info while also tunneling all messages through the same connection. A tunnel goes from a "local" machine to a "remote" machine
-
-A tunnel uses a single local &rarr; remote connection, so Clients don't need access to every port a Service is on. The local machine only makes outbound connections, while the remote one needs to be accessible by the registry port.
-
-## Installation
-
-Somata depends on ZeroMQ:
-
-```sh
-$ sudo apt-get install libzmq-dev
-```
-
-Install the NPM module globally:
-
-```sh
-$ sudo npm install -g somata-registry
-```
