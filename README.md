@@ -1,16 +1,10 @@
-# somata-registry
+# Somata Registry
 
-The Registry is a core Somata service used to register and look up other services by name. Every new Service sends a registry entry (describing itself as `{name, hostname, port, protocol}`). When a Client tries to connect to a Service it looks up available services by name.
+The Registry is a core [Somata](https://github.com/somata) Service used to register and look up other services by name. Every new Service registers itself with the Registry, describing itself as `{name, host, port, protocol}`. When a Client connects to a Service, it first uses the Registry to look up available services by name.
 
 ## Installation
 
-Somata requires the [Node.js ZeroMQ library](https://github.com/JustinTulloss/zeromq.node), which requires [ZeroMQ](http://zeromq.org/) - install with your system package manager:
-
-```sh
-$ sudo apt-get install libzmq-dev
-```
-
-Then install the registry globally with NPM:
+Install globally with NPM. See [Somata installation](https://github.com/somata/somata-node#installation) for dependency information.
 
 ```sh
 $ sudo npm install -g somata-registry
